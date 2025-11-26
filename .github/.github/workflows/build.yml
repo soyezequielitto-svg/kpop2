@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web Assets
+        run: npm run build
+        env:
+          # If you have an API key, you should add it to GitHub Secrets as API_KEY
+          # and uncomment the line below. For now, it will build with an empty key.
+          API_KEY: ${{ secrets.API_KEY }}
+
+      - name: Add Android Platform
+        run: |
+          npm install @capacitor/android
+          npx cap add android
+
+      - name: Sync Capacitor
+        run: npx cap sync
+
+      - name: Build APK (Debug)
+        run: |
+          cd android
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: kpop-polls-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
